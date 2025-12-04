@@ -1,105 +1,234 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <title>Réservation Cantine</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Réservation Cantine</title>
+  <style>
+    :root{
+      --gap: 8px;
+      --cell-min-height: 90px;
+      --accent: #e6f7ff;
+      --highlight: #fff7cc;
+      --muted: #ddd;
+      --border: #ccc;
+      --text: #111;
+      --shadow: 0 2px 6px rgba(0,0,0,.08);
+      --small: 13px;
+    }
+    html,body{
+      height:100%;
+      margin:0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      color:var(--text);
+      -webkit-font-smoothing:antialiased;
+    }
+    /* layout : 4 "lignes" qui remplissent la hauteur */
+    .container{
+      display:flex;
+      flex-direction:column;
+      gap:var(--gap);
+      padding:12px;
+      height:100vh;
+      box-sizing:border-box;
+      background:linear-gradient(180deg,#fafafa,#ffffff);
+    }
+    .row{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:transparent;
+    }
+    .row.title { flex: 0 0 10%; }
+    .row.name { flex: 0 0 12%; }
+    .row.calendar { flex: 1 1 auto; overflow:auto; }
+    .row.footer { flex: 0 0 10%; align-items:center; justify-content:center; gap:12px; }
 
-    <style>
-        body {
-            margin:0;
-            padding:0;
-            font-family: Arial, sans-serif;
-            height:100vh;
-            display:flex;
-            flex-direction:column;
-        }
+    /* month */
+    #monthLabel{
+      font-size: clamp(20px, 4vw, 40px);
+      font-weight:700;
+      text-align:center;
+    }
 
-        /* --- LAYOUT PRINCIPAL --- */
-        .row {
-            flex:1;
-            display:flex;
-            justify-content:center;
-            align-items:center;
-            padding:10px;
-        }
+    /* name selector */
+    .name-box{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      width:100%;
+      max-width:900px;
+    }
+    .input-wrap{
+      position:relative;
+      flex:1 1 auto;
+    }
+    input[type="text"], select{
+      width:100%;
+      padding:10px 12px;
+      font-size:16px;
+      border:1px solid var(--border);
+      border-radius:8px;
+      box-shadow:var(--shadow);
+      box-sizing:border-box;
+    }
+    .autocomplete-list{
+      position:absolute;
+      left:0; right:0;
+      top:100%;
+      background:white;
+      border:1px solid var(--border);
+      border-top:none;
+      max-height:220px;
+      overflow:auto;
+      z-index:40;
+    }
+    .autocomplete-item{
+      padding:8px 10px;
+      cursor:pointer;
+    }
+    .autocomplete-item:hover{ background:#f2f2f2; }
 
-        #monthName {
-            font-size:2rem;
-            font-weight:bold;
-        }
+    /* calendar grid */
+    .calendar-grid{
+      display:grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap:10px;
+      align-items:start;
+      width:100%;
+      max-width:1200px;
+      margin:0 auto;
+      box-sizing:border-box;
+    }
+    .weekday-header{
+      text-align:center;
+      font-weight:600;
+      padding:6px 4px;
+      background:#fff;
+      border-radius:6px;
+      border:1px solid var(--border);
+    }
+    .day-cell{
+      min-height: var(--cell-min-height);
+      padding:8px;
+      border-radius:8px;
+      border:1px solid var(--border);
+      background:white;
+      box-shadow:var(--shadow);
+      position:relative;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+    .day-cell.past{ opacity:.45; pointer-events:none; }
+    .day-cell.today{ background: linear-gradient(180deg,var(--highlight),#fff); }
+    .day-number{ font-weight:700; font-size:14px; display:flex; justify-content:space-between; align-items:center; }
+    .icons-row{ display:flex; gap:8px; align-items:center; font-size:13px; }
+    .count-badge{
+      display:inline-flex;
+      gap:6px;
+      align-items:center;
+      padding:4px 6px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background:#fff;
+      cursor:pointer;
+      font-size:13px;
+    }
 
-        #nameRow {
-            flex-direction:column;
-        }
+    .slot-row{
+      display:grid;
+      grid-template-columns: 1fr auto;
+      align-items:center;
+      gap:8px;
+      margin-top:4px;
+    }
+    .slot-row label{ display:flex; align-items:center; gap:8px; font-size:14px; }
+    .printer{
+      position:absolute;
+      top:6px;
+      right:6px;
+      cursor:pointer;
+      opacity:.85;
+    }
 
-        #calendar {
-            width:95%;
-            height:100%;
-            overflow-y:auto;
-        }
+    /* footer */
+    .status{ margin-right:auto; font-size:14px; color:#333; padding-left:8px; min-width:240px; text-align:left; }
+    button.primary{
+      padding:10px 18px;
+      border-radius:8px;
+      border: none;
+      background:#0b76ef;
+      color:white;
+      font-weight:600;
+      cursor:pointer;
+      box-shadow:var(--shadow);
+    }
 
-        table {
-            width:100%;
-            border-collapse:collapse;
-            text-align:center;
-        }
+    /* modal */
+    .modal-backdrop{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.4);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      z-index:200;
+    }
+    .modal{
+      background:white;
+      border-radius:10px;
+      max-width:520px;
+      width:92%;
+      max-height:80vh;
+      overflow:auto;
+      padding:12px;
+      box-shadow:0 10px 30px rgba(0,0,0,.25);
+    }
+    .modal h3{ margin:4px 0 8px; }
+    .person-item{ display:flex; justify-content:space-between; padding:8px 6px; border-bottom:1px solid #f0f0f0; }
+    .muted{ color:#666; font-size:13px; }
 
-        th, td {
-            border:1px solid #ccc;
-            padding:6px;
-        }
-
-        .past { background:#eee; color:#999; pointer-events:none; }
-        .today { background:#ffffdd; position:relative; }
-        .printIcon {
-            position:absolute;
-            top:4px;
-            right:4px;
-            cursor:pointer;
-            font-size:14px;
-        }
-
-        /* Notification d'état */
-        #statusMessage {
-            flex:1;
-            text-align:left;
-            font-size:0.9rem;
-            color:#555;
-        }
-
-        #validateBtn {
-            padding:10px 20px;
-            font-size:1.1rem;
-        }
-    </style>
+    @media (max-width:720px){
+      .row.title{ flex:0 0 12%;}
+      .row.name{ flex:0 0 14%;}
+      .row.footer{ flex:0 0 12%;}
+      .calendar-grid{ gap:6px; }
+      .day-cell{ min-height:80px; padding:6px; }
+    }
+  </style>
 </head>
-
 <body>
-
-    <!-- 1. Nom du mois -->
-    <div class="row">
-        <div id="monthName"></div>
+  <div class="container">
+    <div class="row title">
+      <div id="monthLabel" aria-live="polite">Mois</div>
     </div>
 
-    <!-- 2. Sélecteur de nom -->
-    <div class="row" id="nameRow">
-        <label for="nameSelect">Votre nom :</label>
-        <input type="text" id="nameInput" placeholder="Tapez votre nom...">
-        <div id="autoList" style="border:1px solid #aaa; max-height:150px; overflow-y:auto; width:200px; display:none;"></div>
+    <div class="row name">
+      <div class="name-box">
+        <div class="input-wrap">
+          <input id="nameInput" type="text" placeholder="Tapez un nom (3 lettres → autocomplétion)"/>
+          <div id="autocomplete" class="autocomplete-list" style="display:none;"></div>
+        </div>
+        <button id="addNameBtn" class="primary">Ajouter</button>
+      </div>
     </div>
 
-    <!-- 3. Calendrier -->
-    <div class="row" id="calendar">
-        <table id="calendarTable"></table>
+    <div class="row calendar">
+      <div class="calendar-grid" id="calendarGrid" role="grid" aria-label="Calendrier cantine">
+        <!-- en JS : 1ère ligne en-têtes puis cases -->
+      </div>
     </div>
 
-    <!-- 4. Validation -->
-    <div class="row">
-        <span id="statusMessage"></span>
-        <button id="validateBtn">Enregistrer</button>
+    <div class="row footer">
+      <div class="status" id="statusMsg">Aucun changement</div>
+      <button id="saveBtn" class="primary">Valider</button>
     </div>
+  </div>
 
-    <script src="app.js"></script>
+  <!-- modal container -->
+  <div id="modalRoot" style="display:none;"></div>
+
+  <script src="script.js"></script>
 </body>
 </html>
