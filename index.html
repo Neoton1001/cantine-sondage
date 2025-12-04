@@ -1,275 +1,105 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Réservation Cantine</title>
-  <style>
-    :root{
-      --gap: 8px;
-      --card-bg: #fff;
-      --muted: #aaa;
-      --accent: #f0f8ff;
-      --highlight: #ffeebb;
-      --cell-border: #ddd;
-      --primary: #0b66ff;
-    }
-    html,body{
-      height:100%;
-      margin:0;
-      font-family:system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;
-      background:#f6f7fb;
-      color:#111;
-    }
+    <meta charset="UTF-8">
+    <title>Réservation Cantine</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    /* Layout: 4 rows that adapt to viewport height */
-    .page{
-      display:grid;
-      grid-template-rows: 12vh 12vh 1fr 12vh; /* adapte automatiquement */
-      gap:var(--gap);
-      height:100vh;
-      padding:12px;
-      box-sizing:border-box;
-    }
+    <style>
+        body {
+            margin:0;
+            padding:0;
+            font-family: Arial, sans-serif;
+            height:100vh;
+            display:flex;
+            flex-direction:column;
+        }
 
-    /* 1. Month header */
-    .month {
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      font-size:clamp(18px,4vw,36px);
-      font-weight:700;
-      text-transform:capitalize;
-    }
+        /* --- LAYOUT PRINCIPAL --- */
+        .row {
+            flex:1;
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            padding:10px;
+        }
 
-    /* 2. Name selection */
-    .person {
-      display:flex;
-      align-items:center;
-      gap:12px;
-      justify-content:center;
-    }
-    .person .name-field{
-      width:min(600px,80%);
-      display:flex;
-      gap:8px;
-      align-items:center;
-      background:var(--card-bg);
-      padding:8px;
-      border-radius:8px;
-      box-shadow:0 1px 3px rgba(0,0,0,0.06);
-    }
-    input[type="text"]{
-      border:1px solid var(--cell-border);
-      padding:8px;
-      font-size:16px;
-      border-radius:6px;
-      flex:1;
-    }
-    button.small{
-      padding:8px 10px;
-      border-radius:6px;
-      border:1px solid var(--cell-border);
-      background:white;
-      cursor:pointer;
-    }
-    .autocomplete-list{
-      position:absolute;
-      background:white;
-      border:1px solid var(--cell-border);
-      margin-top:4px;
-      max-height:160px;
-      overflow:auto;
-      z-index:50;
-      width:min(600px,80%);
-      box-shadow:0 4px 12px rgba(0,0,0,0.08);
-    }
-    .autocomplete-list div{
-      padding:8px;
-      cursor:pointer;
-    }
-    .autocomplete-list div:hover{ background:#eef; }
+        #monthName {
+            font-size:2rem;
+            font-weight:bold;
+        }
 
-    /* 3. Calendar area */
-    .calendar {
-      background:var(--card-bg);
-      padding:12px;
-      border-radius:10px;
-      box-shadow:0 2px 8px rgba(0,0,0,0.06);
-      overflow:auto;
-      display:flex;
-      flex-direction:column;
-    }
+        #nameRow {
+            flex-direction:column;
+        }
 
-    /* weekday header */
-    .weekdays{
-      display:grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap:8px;
-      margin-bottom:8px;
-      font-weight:600;
-      text-align:center;
-    }
+        #calendar {
+            width:95%;
+            height:100%;
+            overflow-y:auto;
+        }
 
-    /* grid of weeks (rows) */
-    .grid-weeks{
-      display:grid;
-      grid-auto-rows:minmax(90px,1fr);
-      gap:8px;
-      grid-template-columns: repeat(5, 1fr);
-    }
+        table {
+            width:100%;
+            border-collapse:collapse;
+            text-align:center;
+        }
 
-    .day-cell{
-      background:#fff;
-      border:1px solid var(--cell-border);
-      border-radius:8px;
-      padding:8px;
-      position:relative;
-      display:flex;
-      flex-direction:column;
-      gap:6px;
-      box-sizing:border-box;
-    }
-    .day-cell.disabled{
-      opacity:0.45;
-      pointer-events:none;
-      background:#f4f4f4;
-    }
-    .day-header{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      font-size:14px;
-    }
-    .day-number{ font-weight:700; font-size:16px; }
+        th, td {
+            border:1px solid #ccc;
+            padding:6px;
+        }
 
-    .print-btn{
-      background:transparent;
-      border:none;
-      cursor:pointer;
-      opacity:0.7;
-    }
+        .past { background:#eee; color:#999; pointer-events:none; }
+        .today { background:#ffffdd; position:relative; }
+        .printIcon {
+            position:absolute;
+            top:4px;
+            right:4px;
+            cursor:pointer;
+            font-size:14px;
+        }
 
-    .veg-line, .slot-line{
-      display:flex;
-      align-items:center;
-      gap:8px;
-      justify-content:space-between;
-      font-size:14px;
-    }
-    .veg-left{
-      display:flex;
-      align-items:center;
-      gap:8px;
-    }
+        /* Notification d'état */
+        #statusMessage {
+            flex:1;
+            text-align:left;
+            font-size:0.9rem;
+            color:#555;
+        }
 
-    .person-btn{
-      display:inline-flex;
-      align-items:center;
-      gap:6px;
-      border:1px solid var(--cell-border);
-      padding:4px 6px;
-      border-radius:6px;
-      background:transparent;
-      cursor:pointer;
-    }
-
-    .counts{
-      display:inline-flex;
-      align-items:center;
-      gap:6px;
-    }
-    .counts .count{
-      font-weight:700;
-      min-width:22px;
-      text-align:center;
-    }
-
-    /* footer / actions */
-    .footer{
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      gap:12px;
-    }
-    .status{
-      margin-right:auto;
-      margin-left:18%;
-      font-size:14px;
-    }
-    .validate-btn{
-      padding:10px 20px;
-      border-radius:10px;
-      border:none;
-      background:var(--primary);
-      color:white;
-      font-weight:700;
-      cursor:pointer;
-      box-shadow:0 4px 10px rgba(11,102,255,0.18);
-    }
-
-    /* modal */
-    .modal-backdrop{
-      position:fixed;
-      inset:0;
-      background:rgba(0,0,0,0.35);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      z-index:120;
-    }
-    .modal{
-      background:white;
-      padding:16px;
-      border-radius:10px;
-      min-width:320px;
-      max-width:90%;
-      max-height:80%;
-      overflow:auto;
-    }
-
-    @media (max-width:800px){
-      .page{ grid-template-rows: 12vh 14vh 1fr 14vh; padding:8px; }
-      .status{ margin-left:6%; }
-    }
-  </style>
+        #validateBtn {
+            padding:10px 20px;
+            font-size:1.1rem;
+        }
+    </style>
 </head>
+
 <body>
-  <div class="page">
-    <!-- 1. Month -->
-    <div class="month" id="monthTitle">Mois</div>
 
-    <!-- 2. Name selection -->
-    <div class="person">
-      <div style="position:relative; width:100%; display:flex; justify-content:center;">
-        <div class="name-field">
-          <input id="nameInput" type="text" placeholder="Tapez votre nom (au moins 3 lettres pour autocomplétion)" autocomplete="off" />
-          <button id="addNameBtn" class="small" title="Ajouter / sélectionner">OK</button>
-        </div>
-        <div id="autocomplete" class="autocomplete-list" style="display:none;"></div>
-      </div>
+    <!-- 1. Nom du mois -->
+    <div class="row">
+        <div id="monthName"></div>
     </div>
 
-    <!-- 3. Calendar -->
-    <div class="calendar" id="calendarContainer">
-      <div class="weekdays" id="weekdays">
-        <!-- Lundi..Vendredi -->
-      </div>
-      <div class="grid-weeks" id="gridWeeks">
-        <!-- cases -->
-      </div>
+    <!-- 2. Sélecteur de nom -->
+    <div class="row" id="nameRow">
+        <label for="nameSelect">Votre nom :</label>
+        <input type="text" id="nameInput" placeholder="Tapez votre nom...">
+        <div id="autoList" style="border:1px solid #aaa; max-height:150px; overflow-y:auto; width:200px; display:none;"></div>
     </div>
 
-    <!-- 4. Footer / Validate -->
-    <div class="footer">
-      <div class="status" id="statusMsg">Aucune modification</div>
-      <button id="validateBtn" class="validate-btn">Valider</button>
+    <!-- 3. Calendrier -->
+    <div class="row" id="calendar">
+        <table id="calendarTable"></table>
     </div>
-  </div>
 
-  <!-- modal area -->
-  <div id="modalRoot" style="display:none;"></div>
+    <!-- 4. Validation -->
+    <div class="row">
+        <span id="statusMessage"></span>
+        <button id="validateBtn">Enregistrer</button>
+    </div>
 
-  <script type="module" src="./app.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
