@@ -1,122 +1,196 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Réservation Cantine</title>
+<meta charset="UTF-8">
+<title>Réservation Cantine</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <link rel="stylesheet" href="style.css">
+<style>
+    body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden; /* empêche le scroll horizontal */
+    }
 
-    <style>
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: #f5f5f5;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
+    #container {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        width: 100%;
+        box-sizing: border-box;
+    }
 
-        header {
-            text-align: center;
-            font-size: 2rem;
-            padding: 15px 0;
-            background: #3498db;
-            color: white;
-        }
+    /* PARTIE 1 — Mois */
+    #month-title {
+        text-align: center;
+        font-size: 2rem;
+        padding: 10px 0;
+        flex-shrink: 0;
+    }
 
-        #nameContainer {
-            padding: 10px;
-            text-align: center;
-        }
+    /* PARTIE 2 — Nom */
+    #name-selector {
+        flex-shrink: 0;
+        padding: 10px;
+        text-align: center;
+    }
+    #name-input {
+        padding: 8px;
+        width: 200px;
+        font-size: 1rem;
+    }
 
-        #calendar {
-            flex: 1;
-            overflow-x: auto;
-            padding: 10px;
-        }
+    /* AUTOCOMPLETE POPUP */
+    #autocomplete-list {
+        position: absolute;
+        background: white;
+        border: 1px solid #ccc;
+        width: 200px;
+        max-height: 150px;
+        overflow-y: auto;
+        display: none;
+        z-index: 10;
+    }
+    #autocomplete-list div {
+        padding: 6px;
+        cursor: pointer;
+    }
+    #autocomplete-list div:hover {
+        background: #eee;
+    }
 
-        .calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(5, minmax(150px, 1fr));
-            gap: 10px;
-            min-width: 750px;
-        }
+    /* PARTIE 3 — CALENDRIER */
+    #calendar {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 10px;
+        box-sizing: border-box;
+    }
 
-        .day-cell {
-            background: white;
-            padding: 10px;
-            border-radius: 12px;
-            box-shadow: 0 0 6px rgba(0,0,0,0.1);
-            position: relative;
-        }
+    .week-row {
+        display: flex;
+        width: 100%;
+    }
 
-        .day-disabled {
-            opacity: 0.4;
-            pointer-events: none;
-        }
+    .day-cell {
+        flex: 1;
+        border: 1px solid #ccc;
+        margin: 2px;
+        padding: 4px;
+        box-sizing: border-box;
+        position: relative;
+        min-width: 160px;
+        background: white;
+    }
 
-        .selected-vege {
-            background: #c8f7c5 !important;
-            border: 2px solid #2ecc71;
-        }
+    .day-header {
+        text-align: center;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
 
-        .selected-hour {
-            background: #d6eaff;
-            border-radius: 6px;
-        }
+    /* VEGETARIEN + HORAIRES */
+    .clickable {
+        cursor: pointer;
+    }
 
-        .print-btn {
-            position: absolute;
-            top: 6px;
-            right: 6px;
-            cursor: pointer;
-            font-size: 1.3rem;
-        }
+    .selected {
+        background: #d5ffd5 !important;
+        border-radius: 6px;
+    }
 
-        footer {
-            padding: 15px;
-            background: #fff;
-            text-align: center;
-            box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
-        }
+    .time-option {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
 
-        #statusMessage {
-            font-size: 0.9rem;
-            color: #666;
-            margin-bottom: 6px;
-            height: 18px;
-        }
+    /* empêche le bouton radio de capturer le clic destiné au picto */
+    .time-option input[type="radio"] {
+        pointer-events: auto; /* click normal */
+    }
 
-        button {
-            background: #27ae60;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1.1rem;
-        }
-    </style>
+    .picto {
+        cursor: pointer;
+        font-size: 1.4rem;
+        margin-left: 4px;
+        user-select: none;
+    }
 
+    .counter {
+        font-weight: bold;
+        margin-left: 2px;
+    }
+
+    /* Grisé pour jours non éditables */
+    .disabled {
+        opacity: 0.4;
+        pointer-events: none;
+    }
+
+    /* Bouton impression */
+    .print-btn {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        cursor: pointer;
+        font-size: 1.2rem;
+        background: #eee;
+        padding: 3px 6px;
+        border-radius: 4px;
+        display: none;
+    }
+
+    /* PARTIE 4 — Validation */
+    #footer {
+        flex-shrink: 0;
+        padding: 10px;
+        text-align: center;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 15px;
+    }
+    #save-status {
+        color: #444;
+    }
+    #validate-btn {
+        padding: 10px 20px;
+        font-size: 1rem;
+        cursor: pointer;
+    }
+
+</style>
 </head>
+
 <body>
+<div id="container">
 
-<header id="monthName">Mois</header>
+    <!-- PARTIE 1 -->
+    <div id="month-title"></div>
 
-<div id="nameContainer">
-    <input id="nameInput" type="text" placeholder="Votre nom..." autocomplete="off">
-    <div id="nameAutocomplete"></div>
+    <!-- PARTIE 2 -->
+    <div id="name-selector">
+        <input id="name-input" placeholder="Votre nom..." autocomplete="off">
+        <div id="autocomplete-list"></div>
+    </div>
+
+    <!-- PARTIE 3 -->
+    <div id="calendar"></div>
+
+    <!-- PARTIE 4 -->
+    <div id="footer">
+        <span id="save-status">Non enregistré</span>
+        <button id="validate-btn">Valider</button>
+    </div>
+
 </div>
-
-<div id="calendar">
-    <div class="calendar-grid" id="calendarGrid"></div>
-</div>
-
-<footer>
-    <div id="statusMessage"></div>
-    <button id="saveButton">Enregistrer</button>
-</footer>
 
 <script src="script.js"></script>
 </body>
