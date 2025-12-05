@@ -2,7 +2,7 @@
  * Chargement du mois depuis l’URL
  *************************************************/
 const params = new URLSearchParams(window.location.search);
-const monthParam = params.get("month") || "2025-01";
+const monthParam = params.get("month") || "2025-12";
 
 const monthLabel = new Date(monthParam + "-01")
     .toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
