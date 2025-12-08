@@ -5,7 +5,7 @@ if(isSelected){ toggleReservation(dt,'t1230', selectedNameId, false);} else { bt
 p1145.querySelector('.count').textContent = getListFor(dt,'t1145').length;
 p1230.querySelector('.count').textContent = getListFor(dt,'t1230').length;
 markUnsaved(true);
-});
+//});
 
 
 return cell;
